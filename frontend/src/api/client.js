@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:8000';
+// Empty locally: requests go to relative /api/... and Vite's dev proxy forwards them to 127.0.0.1:8000.
+// On Vercel, set VITE_API_BASE_URL=https://<your-backend>.onrender.com (build-time variable).
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/+$/, '');
 
 
 /**
@@ -19,7 +21,11 @@ export async function analyzeText(text) {
     });
   } catch {
     // fetch only rejects on network failure (server down, CORS, offline).
-    throw new Error(`Can't reach the analyzer API at ${API_BASE_URL}. Is the backend server running?`);
+    throw new Error(
+      API_BASE_URL
+        ? `Can't reach the analyzer API at ${API_BASE_URL}. If it was idle, it may be waking up: try again in a minute.`
+        : "Can't reach the local analyzer API (127.0.0.1:8000). Is the backend server running?",
+    );
   }
 
   if (!response.ok) {

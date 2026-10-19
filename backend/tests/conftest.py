@@ -6,9 +6,11 @@ from app.config import settings
 
 @pytest.fixture(autouse=True)
 def no_real_api_calls(monkeypatch):
-    """Tests must never hit Gemini, Safe Browsing, or RDAP; individual tests opt back in with mocks."""
+    """Tests must never hit Gemini, Groq, Ollama, Safe Browsing, or RDAP; individual tests opt back in with mocks."""
     monkeypatch.setattr(settings, "gemini_api_key", "")
     monkeypatch.setattr(settings, "safe_browsing_api_key", "")
+    monkeypatch.setattr(settings, "groq_api_key", None)
+    monkeypatch.setattr(settings, "ollama_model", None)
 
     async def no_rdap(urls):
         return None, [], []

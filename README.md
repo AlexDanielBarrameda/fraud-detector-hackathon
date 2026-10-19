@@ -156,6 +156,24 @@ python -m pytest -q        # 91 tests, no network or API keys needed
 
 ---
 
+## Deploy (Vercel + Render)
+
+The local setup above keeps working unchanged; deployment only adds environment variables.
+
+**Backend on Render (free tier).** In the Render dashboard choose **New → Blueprint** and select this repo; `render.yaml` configures the service (`backend/` as root, `uvicorn app.main:app --host 0.0.0.0 --port $PORT`, health check on `/health`). Then set `GEMINI_API_KEY` and `SAFE_BROWSING_API_KEY` under the service's **Environment** tab. `CORS_ORIGINS` is optional: any `https://*.vercel.app` origin is already allowed.
+
+**Frontend on Vercel.** Import the repo, set **Root Directory** to `frontend`, and add the environment variable `VITE_API_BASE_URL=https://<your-service>.onrender.com`. It is read at build time, so redeploy after changing it.
+
+**Before the pitch:**
+
+```powershell
+cd backend
+.\venv\Scripts\Activate.ps1
+python warmup_demo.py https://<your-service>.onrender.com
+```
+
+> Render's free instances **sleep after about 15 minutes without traffic**. The first request after that takes roughly a minute while the server wakes up, and the in-memory cache starts empty. Run the warmup within 15 minutes of presenting (it waits for the server to wake up), or keep the local setup open as your fallback.
+
 ## 3-minute pitch & demo script
 
 > Setup: backend + frontend running, `warmup_demo.py` done, browser on http://localhost:5173 at full screen.
