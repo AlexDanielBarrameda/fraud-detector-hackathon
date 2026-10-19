@@ -40,11 +40,26 @@ class Settings(BaseSettings):
     safe_browsing_api_key: str = ""
     external_check_timeout_seconds: float = 4.0
 
-    # CORS. Local dev origins are always allowed (see main.py). Extra exact origins as a comma-separated
-    # list, e.g. CORS_ORIGINS=https://fraud-analyzer.vercel.app. The regex covers Vercel production and
-    # preview URLs; tighten it to your project (e.g. https://fraud-analyzer.*\.vercel\.app) once deployed.
-    cors_origins: str = ""
-    cors_origin_regex: str = r"https://.*\.vercel\.app"
+    # CORS: exact origins only. Local dev origins are always allowed (see main.py); the deployed frontend is
+    # added here, comma-separated. No wildcard by default: "*.vercel.app" would let ANY site hosted on Vercel
+    # call this API from a browser. CORS_ORIGIN_REGEX stays available as an explicit opt-in.
+    cors_origins: str = "https://fraud-detector-hackathon.vercel.app"
+    cors_origin_regex: str = ""
+
+    # Interactive API docs (/docs, /redoc, /openapi.json). Handy locally; set ENABLE_DOCS=false in production.
+    enable_docs: bool = True
+
+    # Rate limit on NEW analyses (cache hits are free and never counted), per sliding window.
+    # Per-client limit, plus a global cap that still bounds quota burn if a client spoofs its IP.
+    # 0 disables a limit.
+    rate_limit_window_seconds: int = 60
+    rate_limit_per_client: int = 12
+    rate_limit_global: int = 40
+    # Behind a reverse proxy (Render), the client IP is in X-Forwarded-For; only trust it when deployed there.
+    trust_proxy_headers: bool = False
+
+    # Reject request bodies larger than this before parsing (the text itself is capped at 5,000 chars).
+    max_body_bytes: int = 65_536
 
     @property
     def cors_origin_list(self) -> list[str]:

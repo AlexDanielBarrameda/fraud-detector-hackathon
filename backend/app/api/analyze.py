@@ -2,8 +2,9 @@ import asyncio
 import hashlib
 from collections import OrderedDict
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
+from app.security import client_ip, limiter, rate_limited_response
 from app.schemas.analysis import AnalyzeRequest, AnalyzeResponse, ExternalCheckResult
 from app.services.domain_info import check_domains_age
 from app.services.extractor import extract_entities
@@ -29,13 +30,18 @@ def clear_cache() -> None:
     _cache.clear()
 
 
-@router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze(request: AnalyzeRequest) -> AnalyzeResponse:
-    text = request.text
+@router.post("/analyze", response_model=AnalyzeResponse, responses={429: {"description": "Rate limited"}})
+async def analyze(payload: AnalyzeRequest, request: Request) -> AnalyzeResponse:
+    text = payload.text
     key = _cache_key(text)
     if key in _cache:
         _cache.move_to_end(key)
         return _cache[key].model_copy(update={"cached": True}, deep=True)
+
+    # Only new analyses spend AI / threat-intel quota, so only they count against the rate limit.
+    retry_after = limiter.check(client_ip(request))
+    if retry_after is not None:
+        return rate_limited_response(retry_after)
 
     entities = extract_entities(text)
 

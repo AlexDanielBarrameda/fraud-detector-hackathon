@@ -7,7 +7,8 @@ services:
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # --no-server-header: don't advertise the server software (uvicorn) in every response.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --no-server-header
     healthCheckPath: /health
     autoDeploy: true
     envVars:
@@ -21,6 +22,11 @@ services:
       # Optional tier-2 AI fallback (Groq) when all Gemini models are unavailable.
       - key: GROQ_API_KEY
         sync: false
-      # Optional: your exact Vercel URL(s), comma-separated. *.vercel.app is already allowed by default.
+      # Exact frontend origin(s) allowed by CORS, comma-separated (no wildcards).
       - key: CORS_ORIGINS
-        sync: false
+        value: https://fraud-detector-hackathon.vercel.app
+      # Production hardening: hide /docs + /openapi.json; read the real client IP from Render's proxy.
+      - key: ENABLE_DOCS
+        value: "false"
+      - key: TRUST_PROXY_HEADERS
+        value: "true"

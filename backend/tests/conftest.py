@@ -2,6 +2,7 @@ import pytest
 
 from app.api import analyze as analyze_api
 from app.config import settings
+from app.security import limiter
 
 
 @pytest.fixture(autouse=True)
@@ -18,5 +19,7 @@ def no_real_api_calls(monkeypatch):
     # RDAP needs no key, so stub it at the endpoint level. test_external.py exercises the real function.
     monkeypatch.setattr(analyze_api, "check_domains_age", no_rdap)
     analyze_api.clear_cache()
+    limiter.reset()
     yield
     analyze_api.clear_cache()
+    limiter.reset()

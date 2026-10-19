@@ -160,7 +160,7 @@ python -m pytest -q        # 91 tests, no network or API keys needed
 
 The local setup above keeps working unchanged; deployment only adds environment variables.
 
-**Backend on Render (free tier).** In the Render dashboard choose **New → Blueprint** and select this repo; `render.yaml` configures the service (`backend/` as root, `uvicorn app.main:app --host 0.0.0.0 --port $PORT`, health check on `/health`). Then set `GEMINI_API_KEY` and `SAFE_BROWSING_API_KEY` under the service's **Environment** tab. `CORS_ORIGINS` is optional: any `https://*.vercel.app` origin is already allowed.
+**Backend on Render (free tier).** In the Render dashboard choose **New → Blueprint** and select this repo; `render.yaml` configures the service (`backend/` as root, `uvicorn app.main:app --host 0.0.0.0 --port $PORT`, health check on `/health`). Then set `GEMINI_API_KEY`, `SAFE_BROWSING_API_KEY` and (optionally) `GROQ_API_KEY` under the service's **Environment** tab. The blueprint also sets the production hardening: `CORS_ORIGINS` (the exact Vercel URL, no wildcards), `ENABLE_DOCS=false` and `TRUST_PROXY_HEADERS=true`.
 
 **Frontend on Vercel.** Import the repo, set **Root Directory** to `frontend`, and add the environment variable `VITE_API_BASE_URL=https://<your-service>.onrender.com`. It is read at build time, so redeploy after changing it.
 
@@ -173,6 +173,23 @@ python warmup_demo.py https://<your-service>.onrender.com
 ```
 
 > Render's free instances **sleep after about 15 minutes without traffic**. The first request after that takes roughly a minute while the server wakes up, and the in-memory cache starts empty. Run the warmup within 15 minutes of presenting (it waits for the server to wake up), or keep the local setup open as your fallback.
+
+## Security
+
+The deployed API is hardened against the obvious abuse paths:
+
+- **Rate limiting:** 12 new analyses per client and 40 overall per minute (cached results are free and never limited), so nobody can drain the AI quotas before a demo. Over the limit, the API answers `429` with a `Retry-After` header.
+- **Exact-origin CORS:** only the production Vercel URL and the local dev servers may call the API from a browser.
+- **Input limits:** blank text, more than 5,000 characters, wrong types and bodies over 64 KB are rejected before any AI runs.
+- **No information leaks:** `/docs` and `/openapi.json` are off in production, no server banner, no stack traces in errors.
+- **Security headers:** a strict Content-Security-Policy, `nosniff`, `DENY` framing and a referrer policy on the frontend; `nosniff`, `DENY`, `no-store` and HSTS on the API.
+
+`security/pentest.py` audits a deployment and prints a PASS / WARN / FAIL report. It is non-destructive (one request per check, no load testing) and should only be run against deployments you own:
+
+```powershell
+.\backend\venv\Scripts\python.exe security\pentest.py              # live Vercel + Render
+.\backend\venv\Scripts\python.exe security\pentest.py --skip-ai    # skip checks that spend AI quota
+```
 
 ## 3-minute pitch & demo script
 

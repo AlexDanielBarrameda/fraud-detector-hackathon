@@ -1,12 +1,20 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 RiskLevel = Literal["Low", "Medium", "High", "Critical"]
 
 
 class AnalyzeRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=5000, description="The message or text to analyze for scam indicators")
+
+    @field_validator("text")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        # Whitespace-only input would otherwise reach (and spend) the AI providers.
+        if not value.strip():
+            raise ValueError("text must contain at least one non-whitespace character")
+        return value
 
 
 class ExtractedEntities(BaseModel):
