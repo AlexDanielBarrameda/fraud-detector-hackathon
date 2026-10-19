@@ -1,14 +1,5 @@
 const API_BASE_URL = 'http://localhost:8000';
 
-/** Resolves true when the backend answers /health, false otherwise. Never throws. */
-export async function checkHealth() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/health`);
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Sends a message text to the backend analysis endpoint.
