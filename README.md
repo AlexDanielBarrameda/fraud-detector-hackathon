@@ -174,6 +174,18 @@ python warmup_demo.py https://<your-service>.onrender.com
 
 > Render's free instances **sleep after about 15 minutes without traffic**. The first request after that takes roughly a minute while the server wakes up, and the in-memory cache starts empty. Run the warmup within 15 minutes of presenting (it waits for the server to wake up), or keep the local setup open as your fallback.
 
+### Keep it awake during the event
+
+Two layers keep the free Render instance awake and the 5 demo presets cached:
+
+- **Laptop:** `backend/keep_alive.py` pings `/health` every 13 minutes and re-warms the presets whenever the cache is empty (first run, after a cold start, or after a redeploy). Run it from `backend` with the venv active:
+
+  ```powershell
+  python keep_alive.py https://<your-service>.onrender.com
+  ```
+
+- **Cloud backup:** `.github/workflows/keep-alive.yml` does the same on a GitHub Actions schedule, so it keeps working with the laptop closed. It only runs from the repository's default branch. In a private repo each run uses at least 1 of the 2,000 free Actions minutes a month, so disable it in the **Actions** tab after the event.
+
 ## Security
 
 The deployed API is hardened against the obvious abuse paths:

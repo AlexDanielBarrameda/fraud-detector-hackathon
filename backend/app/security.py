@@ -35,7 +35,10 @@ class SlidingWindowLimiter:
     def check(self, client: str, now: float | None = None) -> float | None:
         """Record a hit and return None if allowed, or the seconds to wait if limited (hit not recorded)."""
         window = settings.rate_limit_window_seconds
-        per_client, global_cap = settings.rate_limit_per_client, settings.rate_limit_global
+        per_client, global_cap = (
+            settings.rate_limit_per_client,
+            settings.rate_limit_global,
+        )
         now = time.monotonic() if now is None else now
         cutoff = now - window
         with self._lock:
@@ -81,7 +84,9 @@ def rate_limited_response(retry_after: float) -> JSONResponse:
     seconds = max(1, math.ceil(retry_after))
     return JSONResponse(
         status_code=429,
-        content={"detail": f"Too many new scans right now. Please wait {seconds} seconds and try again."},
+        content={
+            "detail": f"Too many new scans right now. Please wait {seconds} seconds and try again."
+        },
         headers={"Retry-After": str(seconds)},
     )
 
@@ -92,7 +97,9 @@ class BodySizeLimitMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         length = request.headers.get("content-length")
         if length and length.isdigit() and int(length) > settings.max_body_bytes:
-            return JSONResponse(status_code=413, content={"detail": "Request body too large."})
+            return JSONResponse(
+                status_code=413, content={"detail": "Request body too large."}
+            )
         return await call_next(request)
 
 
@@ -110,6 +117,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         for name, value in SECURITY_HEADERS.items():
             response.headers.setdefault(name, value)
         # HSTS only on HTTPS (Render terminates TLS and reports it via X-Forwarded-Proto); local http is untouched.
-        if request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https":
-            response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        if (
+            request.url.scheme == "https"
+            or request.headers.get("x-forwarded-proto") == "https"
+        ):
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
         return response

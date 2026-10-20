@@ -75,7 +75,8 @@
               "title": "Bookmarks"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -183,6 +184,7 @@
   },
   "active": "93f2a9d0cc5d9a88",
   "lastOpenFiles": [
+    "Untitled.base",
     "Backend Python Dependencies.md",
     "_COMMUNITY_Scam Analysis Pipeline Concepts.md",
     "graph.canvas",

@@ -1,0 +1,62 @@
+# Keeps the Render backend awake and its demo cache warm, even when no laptop is running keep_alive.py.
+#
+# Each run wakes the server if it slept (warmup_demo.py waits up to 2 minutes for /health), then POSTs
+# the 5 demo presets: cached ones answer instantly and cost nothing; any missing after a restart are
+# re-analyzed, so the cache refills even if a scheduled run was delayed and Render went to sleep.
+#
+# Notes:
+#   * GitHub only runs scheduled workflows from the repository's DEFAULT branch, and can delay them
+#     by several minutes (or more) under load.
+#   * In a private repo each run uses at least 1 of the 2,000 free Actions minutes per month
+#     (~110 runs/day at this schedule). Disable this workflow in the Actions tab after the event.
+#   * Override the target with a repository variable: Settings -> Secrets and variables -> Actions
+#     -> Variables -> RENDER_BACKEND_URL.
+
+name: Keep Render awake
+
+on:
+  schedule:
+    - cron: "*/13 * * * *"
+  workflow_dispatch:
+
+# Never stack runs: if one is delayed or slow, the next waits instead of doubling the AI calls.
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  wake-and-warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      BASE_URL: ${{ vars.RENDER_BACKEND_URL || 'https://fraud-analyzer-api-bmjf.onrender.com' }}
+    steps:
+      - name: Check out the warmup script and presets only
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            backend/warmup_demo.py
+            frontend/src/data/presets.json
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install httpx
+        run: python -m pip install --quiet httpx==0.28.1
+
+      - name: Wake the server and make sure the demo presets are cached
+        run: |
+          set +e
+          python backend/warmup_demo.py "$BASE_URL" --delay 13
+          rc=$?
+          if [ "$rc" -eq 1 ]; then
+            echo "::warning::Server is up, but some presets are not cached yet (AI providers busy or rate limited). The next run retries."
+            exit 0
+          fi
+          exit "$rc"
