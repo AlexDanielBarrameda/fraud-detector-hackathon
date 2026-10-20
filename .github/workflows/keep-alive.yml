@@ -29,13 +29,14 @@ permissions:
 
 jobs:
   wake-and-warm:
-    runs-on: ubuntu-latest
+    # Pinned (not ubuntu-latest) so the runner image does not change mid-event.
+    runs-on: ubuntu-24.04
     timeout-minutes: 8
     env:
       BASE_URL: ${{ vars.RENDER_BACKEND_URL || 'https://fraud-analyzer-api-bmjf.onrender.com' }}
     steps:
       - name: Check out the warmup script and presets only
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           sparse-checkout: |
             backend/warmup_demo.py
@@ -43,7 +44,7 @@ jobs:
           sparse-checkout-cone-mode: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
