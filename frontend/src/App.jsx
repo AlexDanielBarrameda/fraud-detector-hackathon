@@ -3,16 +3,20 @@ import { CpuBoltIcon, DangerCircleIcon, GlobalIcon, ListCheckIcon, ServerIcon } 
 
 import { analyzeText } from './api/client';
 import { ShieldIllustration } from './components/Brand';
+import ColdStartToast from './components/ColdStartToast';
 import Header from './components/Header';
 import InputView from './components/InputView';
 import ResultView from './components/ResultView';
 import Sidebar from './components/Sidebar';
 import { addEntry, detectKind, loadHistory, makeEntry, saveHistory } from './lib/history';
+import { useServerStatus } from './lib/serverStatus';
 import { normalizePastedText } from './lib/text';
 import { useTheme } from './lib/theme';
 
 // Only show the scanning state if a request is actually slow; cached results swap in with no flash.
 const PENDING_DELAY_MS = 150;
+// While the server's readiness is still unknown, a scan this slow means it was asleep.
+const SLOW_SCAN_MS = 5_000;
 
 const LAYERS = [
   { Icon: ListCheckIcon, name: 'Fraud detection rules' },
@@ -50,8 +54,11 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(null);
+  const [coldToast, setColdToast] = useState({ open: false, startedAt: 0 });
+  const { status: serverStatus, statusRef: serverStatusRef, markAwake } = useServerStatus();
   const latestRequest = useRef(0);
   const pendingTimer = useRef(null);
+  const coldTimer = useRef(null);
   const mainRef = useRef(null);
   const textareaRef = useRef(null);
 
@@ -64,6 +71,11 @@ export default function App() {
 
   const showTop = () => mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+  const hideColdToast = () => {
+    clearTimeout(coldTimer.current);
+    setColdToast((t) => (t.open ? { ...t, open: false } : t));
+  };
+
   const analyze = async (messageText, kind) => {
     if (!messageText.trim()) return;
     // Ignore responses from superseded requests (e.g. two sample clicks in a row).
@@ -75,8 +87,23 @@ export default function App() {
       if (requestId === latestRequest.current) setPending(true);
     }, PENDING_DELAY_MS);
 
+    // Cold-start notice: only while the server is not known to be awake. Once it has answered,
+    // a slow scan is just a slow AI provider, not a sleeping server, so we stay quiet.
+    hideColdToast();
+    if (serverStatusRef.current !== 'awake') {
+      const startedAt = Date.now();
+      const show = () => {
+        if (requestId === latestRequest.current && serverStatusRef.current !== 'awake') {
+          setColdToast({ open: true, startedAt });
+        }
+      };
+      if (serverStatusRef.current === 'waking') show();
+      else coldTimer.current = setTimeout(show, SLOW_SCAN_MS);
+    }
+
     try {
       const result = await analyzeText(messageText);
+      markAwake(); // a successful analysis proves the server is up
       if (requestId !== latestRequest.current) return;
       const entry = makeEntry(messageText, kind, result);
       updateHistory((prev) => addEntry(prev, entry));
@@ -88,6 +115,7 @@ export default function App() {
     } finally {
       if (requestId === latestRequest.current) {
         clearTimeout(pendingTimer.current);
+        hideColdToast();
         setLoading(false);
         setPending(false);
       }
@@ -108,7 +136,13 @@ export default function App() {
 
   const handleOpenScan = (entry) => {
     if (entry.result) {
-      latestRequest.current += 1; // cancel any in-flight request's UI updates
+      // Cancel any in-flight scan's UI updates. Its finally-block skips cleanup for superseded requests,
+      // so reset the loading state here, or the "Analyzing" screen would stay up over the saved result.
+      latestRequest.current += 1;
+      clearTimeout(pendingTimer.current);
+      hideColdToast();
+      setLoading(false);
+      setPending(false);
       setError(null);
       setCurrent({ entry, fromHistory: true });
       setView('result');
@@ -171,6 +205,13 @@ export default function App() {
           busy={loading}
         />
       </main>
+
+      <ColdStartToast
+        open={coldToast.open}
+        startedAt={coldToast.startedAt}
+        serverAwake={serverStatus === 'awake'}
+        onDismiss={hideColdToast}
+      />
     </div>
   );
 }

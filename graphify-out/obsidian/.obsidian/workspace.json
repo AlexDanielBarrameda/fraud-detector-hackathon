@@ -4,11 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "a81da3fb554bcfc6",
+        "id": "d693f503b3befa62",
         "type": "tabs",
         "children": [
           {
-            "id": "93f2a9d0cc5d9a88",
+            "id": "ca047f0708349131",
             "type": "leaf",
             "state": {
               "type": "graph",
@@ -31,27 +31,12 @@
         "type": "tabs",
         "children": [
           {
-            "id": "ed7f34dbf2bfec31",
-            "type": "leaf",
-            "state": {
-              "type": "file-explorer",
-              "state": {
-                "sortOrder": "alphabetical",
-                "autoReveal": false,
-                "showSearch": false,
-                "searchQuery": ""
-              },
-              "icon": "lucide-folder-closed",
-              "title": "Files"
-            }
-          },
-          {
             "id": "b619fd3cbaa12513",
             "type": "leaf",
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "tag:#graphify/code",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -74,9 +59,24 @@
               "icon": "lucide-bookmark",
               "title": "Bookmarks"
             }
+          },
+          {
+            "id": "84f49246286763d9",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "horizontal",
@@ -182,12 +182,20 @@
       "bases:Create new base": false
     }
   },
-  "active": "93f2a9d0cc5d9a88",
+  "active": "84f49246286763d9",
   "lastOpenFiles": [
+    "graph.canvas",
+    "@vitejsplugin-react.md",
+    "Untitled 3.base",
+    "Untitled",
+    "Untitled 1.md",
+    "Untitled.md",
+    "Untitled 2.base",
+    "Untitled 1.base",
+    "Untitled 1.canvas",
+    "Untitled.canvas",
     "Untitled.base",
     "Backend Python Dependencies.md",
-    "_COMMUNITY_Scam Analysis Pipeline Concepts.md",
-    "graph.canvas",
-    "Untitled.canvas"
+    "_COMMUNITY_Scam Analysis Pipeline Concepts.md"
   ]
 }
